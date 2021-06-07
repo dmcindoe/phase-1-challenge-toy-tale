@@ -1,10 +1,13 @@
-let addToy = false;
 const addBtn = document.querySelector('#new-toy-btn')
 const toyForm = document.querySelector('.container')
 const toyCollection = document.querySelector('#toy-collection')
+let addToy = false
 const createToyForm = document.querySelector('.add-toy-form')
 
-document.addEventListener("DOMContentLoaded", () => {
+
+ document.addEventListener("DOMContentLoaded", () => {
+  const addBtn = document.querySelector('#new-toy-btn')
+  const toyFormContainer = document.querySelector('.container')
   addBtn.addEventListener("click", () => {
     // hide & seek with the form
     addToy = !addToy;
@@ -14,52 +17,78 @@ document.addEventListener("DOMContentLoaded", () => {
       toyFormContainer.style.display = "none";
     }
   });
-});
-
-const initialize = () => {
+ });
+// Grabing data from back end to display what is already collected
+ const initialize = () => {
   fetch('http://localhost:3000/toys')
     .then(resp => resp.json())
     .then(toys => toys.forEach(showToy))
 }
 
+// Creating Card and data outline for each Toy
 const showToy = toy => {
-  let toyNew = toy
-  let toyCard = document.createElement('div')
-  toyCard.className = 'card'
-  toyCard.innerHTML = `
-  <h2>${toyNew.name}</h2>
-  <img src=${toyNew.image} class="toy-avatar" />`
-  let likesP = document.createElement('p')
-  likesP.innerText = `${toyNew.likes} Likes`
-  toyCard.append(likesP)
+  let thisToy = toy
+  let toyDiv = document.createElement('div')
+  toyDiv.classList.add('card')
+  toyDiv.innerHTML = `
+    <h2>${toy.name}</h2>
+    <img src=${toy.image} class="toy-avatar" />
+    <p>${toy.likes}</p>`
   let likeBtn = document.createElement('button')
-  likeBtn.className = 'like-btn'
+  likeBtn.class = 'like-btn'
   likeBtn.innerText = 'Like <3'
-  likeBtn.addEventListener('click', e => increaseLikes(e, toyNew))
-  toyCard.append(likeBtn)
-  toyCollection.append(toyCard)
+  likeBtn.addEventListener('click', e => showLikes(e, thisToy))
+  toyDiv.append(likeBtn)
+  toyCollection.append(toyDiv)
 }
 
-const increaseLikes = (e, toy) => {
-  let toyLikes = toy.likes
-  let toyId = toy.id
-  return fetch(`http://localhost:3000/toys/${toyId}`, {
+const showLikes = (e, toy) => {
+  let num = parseInt(e.target.parentElement.children[2].innerText)
+  e.target.parentElement.children[2].innerText = num + 1
+  likeToy(toy)
+}
+
+const likeToy = toy => {
+  fetch(`http://localhost:3000/toys/${toy.id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
     },
-    body: JSON.stringify({ likes: ++toyLikes })
-  })
-    .then(resp => resp.json())
-    .then(showLikes(e))
+    body: JSON.stringify({ likes: toy.likes++ })
+  }).then(resp => resp.json())
 }
 
-const showLikes = e => {
+
+createToyForm.addEventListener('submit', e => {
   e.preventDefault()
-  let newNum =
-    parseInt(e.target.parentElement.children[2].innerText.split(' ')[0]) + 1
-  e.target.parentElement.children[2].innerText = `${newNum} Likes`
+  addNewToy(e)
+  createToyForm.reset()
+})
+
+// form submitted for new toys in form
+const addNewToy = e => {
+  let newToy = {
+    name: e.target.name.value,
+    image: e.target.image.value,
+    likes: 0
+  }
+  createToy(newToy)
+}
+
+// Posting of information of new to the server
+const createToy = toy => {
+  fetch('http://localhost:3000/toys', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify(toy)
+  })
+    .then(resp => resp.json())
+    .then(showToy(toy))
 }
 
 initialize()
+
